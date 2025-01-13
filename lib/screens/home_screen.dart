@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/job.dart';
 import '../models/job_filters.dart';
 import '../services/job_service.dart';
 import '../widgets/job_card.dart';
-import 'add_job_screen.dart';
 import 'filter_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,11 +14,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final JobService _jobService = JobService();
-  final TextEditingController _searchController = TextEditingController();
-  final List<Job> _jobs = [];
-  bool _isLoading = false;
+  final _jobService = JobService();
+  final _searchController = TextEditingController();
   JobFilters _currentFilters = JobFilters();
+  List<Job>? _jobs;
+  String? _error;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -33,45 +34,37 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadJobs() async {
-    if (_isLoading) return;
-
     setState(() {
       _isLoading = true;
+      _error = null;
     });
 
     try {
-      final jobs = await _jobService.getJobs(
-        filters: JobFilters(
-          search: _searchController.text,
-          type: _currentFilters.type,
-          minSalary: _currentFilters.minSalary,
-          maxSalary: _currentFilters.maxSalary,
-          tags: _currentFilters.tags,
-          location: _currentFilters.location,
-        ),
-      );
-
+      final jobs = await _jobService.getJobs(filters: _currentFilters);
       setState(() {
-        _jobs.clear();
-        _jobs.addAll(jobs);
+        _jobs = jobs;
+        _isLoading = false;
       });
     } catch (e) {
-      // TODO: Show error message
-      print('Error loading jobs: $e');
-    } finally {
       setState(() {
+        _error = e.toString();
         _isLoading = false;
       });
     }
   }
 
-  Future<void> _openFilterScreen() async {
+  void _onSearch(String value) {
+    setState(() {
+      _currentFilters = _currentFilters.copyWith(searchTerm: value);
+    });
+    _loadJobs();
+  }
+
+  Future<void> _showFilters() async {
     final result = await Navigator.push<JobFilters>(
       context,
       MaterialPageRoute(
-        builder: (context) => FilterScreen(
-          initialFilters: _currentFilters,
-        ),
+        builder: (context) => FilterScreen(initialFilters: _currentFilters),
       ),
     );
 
@@ -86,251 +79,279 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AddJobScreen(),
-            ),
-          ).then((_) => _loadJobs());
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('Post a Job'),
-      ),
+      backgroundColor: Colors.grey[50],
       body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _loadJobs,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Search jobs...',
-                          prefixIcon: const Icon(Icons.search),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 0,
-                          ),
-                        ),
-                        onSubmitted: (_) => _loadJobs(),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton.filledTonal(
-                      onPressed: _openFilterScreen,
-                      icon: Badge(
-                        isLabelVisible: _currentFilters.isNotEmpty,
-                        label: Text(_currentFilters.activeFilterCount.toString()),
-                        child: const Icon(Icons.tune),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (_currentFilters.isNotEmpty)
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
+        child: Column(
+          children: [
+            // Fixed Top Bar (only menu and notification)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.menu),
+                    onPressed: () {},
+                  ),
+                  Row(
                     children: [
-                      if (_currentFilters.type != null)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: Chip(
-                            label: Text(_currentFilters.type!),
-                            onDeleted: () {
-                              setState(() {
-                                _currentFilters = JobFilters(
-                                  search: _currentFilters.search,
-                                  minSalary: _currentFilters.minSalary,
-                                  maxSalary: _currentFilters.maxSalary,
-                                  tags: _currentFilters.tags,
-                                  location: _currentFilters.location,
-                                );
-                              });
-                              _loadJobs();
-                            },
+                      TextButton.icon(
+                        onPressed: () {
+                          // TODO: Navigate to post job screen
+                        },
+                        icon: const Icon(Icons.add, color: Color(0xFF2D4A3E)),
+                        label: const Text(
+                          'Post a job',
+                          style: TextStyle(
+                            color: Color(0xFF2D4A3E),
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      if (_currentFilters.location != null)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: Chip(
-                            avatar: const Icon(Icons.location_on_outlined, size: 18),
-                            label: Text(_currentFilters.location!),
-                            onDeleted: () {
-                              setState(() {
-                                _currentFilters = JobFilters(
-                                  search: _currentFilters.search,
-                                  type: _currentFilters.type,
-                                  minSalary: _currentFilters.minSalary,
-                                  maxSalary: _currentFilters.maxSalary,
-                                  tags: _currentFilters.tags,
-                                );
-                              });
-                              _loadJobs();
-                            },
-                          ),
-                        ),
-                      if ((_currentFilters.minSalary != null && _currentFilters.minSalary != 0) || 
-                          (_currentFilters.maxSalary != null && _currentFilters.maxSalary != 200))
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: Chip(
-                            label: Text(
-                              '\$${_currentFilters.minSalary ?? 0}K - \$${_currentFilters.maxSalary ?? 200}K',
-                            ),
-                            onDeleted: () {
-                              setState(() {
-                                _currentFilters = JobFilters(
-                                  search: _currentFilters.search,
-                                  type: _currentFilters.type,
-                                  tags: _currentFilters.tags,
-                                  location: _currentFilters.location,
-                                );
-                              });
-                              _loadJobs();
-                            },
-                          ),
-                        ),
-                      ..._currentFilters.tags.map(
-                        (tag) => Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: Chip(
-                            label: Text(tag),
-                            onDeleted: () {
-                              final newTags = List<String>.from(_currentFilters.tags)
-                                ..remove(tag);
-                              setState(() {
-                                _currentFilters = JobFilters(
-                                  search: _currentFilters.search,
-                                  type: _currentFilters.type,
-                                  minSalary: _currentFilters.minSalary,
-                                  maxSalary: _currentFilters.maxSalary,
-                                  tags: newTags,
-                                  location: _currentFilters.location,
-                                );
-                              });
-                              _loadJobs();
-                            },
-                          ),
-                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.notifications_outlined),
+                        onPressed: () {},
+                      ),
+                      const CircleAvatar(
+                        radius: 16,
+                        backgroundImage: NetworkImage('https://placeholder.com/48x48'),
                       ),
                     ],
                   ),
-                ),
-              Expanded(
-                child: _isLoading
-                    ? ListView.builder(
-                        padding: const EdgeInsets.all(16.0),
-                        itemCount: 5, // Show 5 skeleton items
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16.0),
-                            child: Container(
-                              height: 160,
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        flex: 2,
-                                        child: Container(
-                                          height: 24,
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[200],
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Container(
-                                          height: 24,
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[200],
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Container(
-                                    height: 16,
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[200],
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Container(
-                                    height: 16,
-                                    width: 200,
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey[200],
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    children: List.generate(
-                                      3,
-                                      (index) => Padding(
-                                        padding: const EdgeInsets.only(right: 8.0),
-                                        child: Container(
-                                          height: 32,
-                                          width: 80,
-                                          decoration: BoxDecoration(
-                                            color: Colors.grey[200],
-                                            borderRadius: BorderRadius.circular(16),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      )
-                    : _jobs.isEmpty
-                        ? const Center(
-                            child: Text('No jobs found'),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(16.0),
-                            itemCount: _jobs.length,
-                            itemBuilder: (context, index) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 16.0),
-                                child: JobCard(job: _jobs[index]),
-                              );
-                            },
-                          ),
+                ],
               ),
-            ],
-          ),
+            ),
+
+            // Scrollable Content
+            Expanded(
+              child: CustomScrollView(
+                slivers: [
+                  // Header Content
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            DateFormat('E, dd MMMM yyyy').format(DateTime.now()),
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            "Let's Find Jobs\nOpportunity here",
+                            style: TextStyle(
+                              fontSize: 24,
+                              height: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Sticky Search Bar
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _StickySearchBarDelegate(
+                      searchController: _searchController,
+                      onSearch: _onSearch,
+                      showFilters: _showFilters,
+                    ),
+                  ),
+
+                  if (_isLoading)
+                    const SliverFillRemaining(
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (_error != null)
+                    SliverFillRemaining(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              _error!,
+                              style: TextStyle(color: Colors.red[700]),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _loadJobs,
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else if (_jobs == null || _jobs!.isEmpty)
+                    const SliverFillRemaining(
+                      child: Center(child: Text('No jobs found')),
+                    )
+                  else ...[
+                    // Analytics Card
+                    SliverPadding(
+                      padding: const EdgeInsets.all(16.0),
+                      sliver: SliverToBoxAdapter(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2D4A3E),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _buildAnalyticItem('Available\nPositions', '${_jobs!.length}'),
+                              Container(width: 1, height: 40, color: Colors.white24),
+                              _buildAnalyticItem('Applied\nJobs', '0'),
+                              Container(width: 1, height: 40, color: Colors.white24),
+                              _buildAnalyticItem('Unread\nMessages', '0'),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Recommendations Title
+                    const SliverPadding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0),
+                      sliver: SliverToBoxAdapter(
+                        child: Text(
+                          'Recommended Jobs',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Jobs List
+                    SliverPadding(
+                      padding: const EdgeInsets.all(16.0),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) => Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: JobCard(job: _jobs![index]),
+                          ),
+                          childCount: _jobs!.length,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+
+  Widget _buildAnalyticItem(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+}
+
+class _StickySearchBarDelegate extends SliverPersistentHeaderDelegate {
+  final TextEditingController searchController;
+  final Function(String) onSearch;
+  final VoidCallback showFilters;
+
+  const _StickySearchBarDelegate({
+    required this.searchController,
+    required this.onSearch,
+    required this.showFilters,
+  });
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Colors.grey[50],
+      padding: const EdgeInsets.all(16.0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.search, color: Colors.grey[400]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: searchController,
+                      onChanged: onSearch,
+                      decoration: InputDecoration(
+                        hintText: 'Search jobs...',
+                        hintStyle: TextStyle(color: Colors.grey[400]),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          GestureDetector(
+            onTap: showFilters,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2D4A3E),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.tune, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  double get maxExtent => 80.0;
+
+  @override
+  double get minExtent => 80.0;
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) => false;
 }

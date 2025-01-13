@@ -1,120 +1,123 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/job.dart';
 import '../models/job_filters.dart';
+import '../utils/error_handler.dart';
 
 class JobService {
-  static String get baseUrl {
-    // 10.0.2.2 is the special IP for localhost on Android emulator
-    return 'http://10.0.2.2:3000/api';
-  }
+  final supabase = Supabase.instance.client;
 
   Future<List<Job>> getJobs({JobFilters? filters}) async {
     try {
-      final queryParams = filters?.toQueryParameters() ?? {};
-      final uri = Uri.parse('$baseUrl/jobs').replace(queryParameters: queryParams);
-      
-      print('Fetching jobs from: $uri');
-      final response = await http.get(
-        uri,
-        headers: {'Accept': 'application/json'},
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw Exception('Request timed out');
-        },
-      );
-      
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-      
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        
-        if (data['status'] == 'success') {
-          return (data['data'] as List).map((jobData) => Job.fromJson(jobData)).toList();
-        }
+      var query = supabase
+          .from('jobs')
+          .select('''
+            *,
+            towns!inner (
+              name,
+              region
+            )
+          ''');
+
+      if (filters != null) {
+        query = filters.applyFilters(query);
       }
-      throw Exception('Failed to load jobs: Status ${response.statusCode}');
+
+      final response = await query.order('created_at', ascending: false).execute();
+      
+      return (response.data as List).map((job) {
+        final town = job['towns'];
+        return Job.fromJson({
+          ...job,
+          'town_name': town['name'],
+          'region': town['region'],
+        });
+      }).toList();
     } catch (e) {
-      print('Error fetching jobs: $e');
-      throw Exception('Failed to load jobs: $e');
+      throw Exception(ErrorHandler.getErrorMessage(e));
     }
   }
 
-  Future<List<String>> getJobTypes() async {
+  Future<Job> getJob(String id) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/jobs/types'),
-        headers: {'Accept': 'application/json'},
-      );
+      final response = await supabase
+          .from('jobs')
+          .select('''
+            *,
+            towns!inner (
+              name,
+              region
+            )
+          ''')
+          .eq('id', id)
+          .single()
+          .execute();
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        if (data['status'] == 'success') {
-          return List<String>.from(data['data']);
-        }
-      }
-      return [];
+      final town = response.data['towns'];
+      return Job.fromJson({
+        ...response.data,
+        'town_name': town['name'],
+        'region': town['region'],
+      });
     } catch (e) {
-      print('Error fetching job types: $e');
-      return [];
+      throw Exception(ErrorHandler.getErrorMessage(e));
     }
   }
 
-  Future<List<String>> getTags() async {
-    final response = await http.get(Uri.parse('$baseUrl/jobs/tags'));
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.cast<String>();
+  Future<void> createJob(Job job) async {
+    try {
+      await supabase
+          .from('jobs')
+          .insert(job.toJson())
+          .execute();
+    } catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e));
     }
-    throw Exception('Failed to load tags');
+  }
+
+  Future<void> updateJob(String id, Job job) async {
+    try {
+      await supabase
+          .from('jobs')
+          .update(job.toJson())
+          .eq('id', id)
+          .execute();
+    } catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e));
+    }
+  }
+
+  Future<void> deleteJob(String id) async {
+    try {
+      await supabase
+          .from('jobs')
+          .delete()
+          .eq('id', id)
+          .execute();
+    } catch (e) {
+      throw Exception(ErrorHandler.getErrorMessage(e));
+    }
   }
 
   Future<Map<String, List<String>>> getTowns() async {
-    final response = await http.get(Uri.parse('$baseUrl/jobs/towns'));
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      final Map<String, List<String>> townsByRegion = {};
+    try {
+      final response = await supabase
+          .from('towns')
+          .select('name, region')
+          .order('region')
+          .execute();
       
-      for (final item in data) {
+      final Map<String, List<String>> townsByRegion = {};
+      for (final item in response.data) {
         final region = item['region'] as String;
         final town = item['name'] as String;
-        
-        if (!townsByRegion.containsKey(region)) {
-          townsByRegion[region] = [];
-        }
-        townsByRegion[region]!.add(town);
+        townsByRegion.putIfAbsent(region, () => []).add(town);
       }
-      
       return townsByRegion;
-    }
-    throw Exception('Failed to load towns');
-  }
-
-  Future<Job> getJob(int id) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/jobs/$id'),
-        headers: {'Accept': 'application/json'},
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw Exception('Request timed out');
-        },
-      );
-      
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        
-        if (data['status'] == 'success') {
-          return Job.fromJson(data['data']);
-        }
-      }
-      throw Exception('Failed to load job: Status ${response.statusCode}');
     } catch (e) {
-      print('Error fetching job: $e');
-      throw Exception('Failed to load job: $e');
+      if (ErrorHandler.isNetworkError(e)) {
+        throw Exception(ErrorHandler.getErrorMessage(e));
+      }
+      return {};
     }
   }
 }

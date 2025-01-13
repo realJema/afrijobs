@@ -1,54 +1,81 @@
+import 'package:postgrest/postgrest.dart';
+
 class JobFilters {
-  final String? search;
+  final String? searchTerm;
   final String? type;
-  final String? location;
-  final int? minSalary;
-  final int? maxSalary;
+  final String? town;
+  final String? region;
   final List<String> tags;
+  final String? minSalary;
+  final String? maxSalary;
 
   JobFilters({
-    this.search,
+    this.searchTerm,
     this.type,
-    this.location,
+    this.town,
+    this.region,
     this.minSalary,
     this.maxSalary,
     List<String>? tags,
   }) : tags = tags ?? [];
 
-  Map<String, String> toQueryParameters() {
-    final Map<String, String> params = {};
+  JobFilters copyWith({
+    String? searchTerm,
+    String? type,
+    String? town,
+    String? region,
+    List<String>? tags,
+    String? minSalary,
+    String? maxSalary,
+  }) {
+    return JobFilters(
+      searchTerm: searchTerm ?? this.searchTerm,
+      type: type ?? this.type,
+      town: town ?? this.town,
+      region: region ?? this.region,
+      tags: tags ?? this.tags,
+      minSalary: minSalary ?? this.minSalary,
+      maxSalary: maxSalary ?? this.maxSalary,
+    );
+  }
 
-    if (search != null && search!.isNotEmpty) {
-      params['search'] = search!;
+  PostgrestFilterBuilder applyFilters(PostgrestFilterBuilder query) {
+    if (searchTerm != null && searchTerm!.isNotEmpty) {
+      query = query.or('title.ilike.%$searchTerm%,description.ilike.%$searchTerm%,company.ilike.%$searchTerm%');
     }
 
-    if (type != null) {
-      params['type'] = type!;
+    if (type != null && type!.isNotEmpty) {
+      query = query.eq('type', type);
     }
 
-    if (location != null && location!.isNotEmpty) {
-      params['location'] = location!;
+    if (town != null && town!.isNotEmpty) {
+      query = query.eq('town_id.name', town);
     }
 
-    if (minSalary != null) {
-      params['minSalary'] = minSalary!.toString();
-    }
-
-    if (maxSalary != null) {
-      params['maxSalary'] = maxSalary!.toString();
+    if (region != null && region!.isNotEmpty) {
+      query = query.eq('town_id.region', region);
     }
 
     if (tags.isNotEmpty) {
-      params['tags'] = tags.join(',');
+      query = query.contains('tags', tags);
     }
 
-    return params;
+    if (minSalary != null && minSalary!.isNotEmpty) {
+      query = query.gte('salary_range', minSalary);
+    }
+
+    if (maxSalary != null && maxSalary!.isNotEmpty) {
+      query = query.lte('salary_range', maxSalary);
+    }
+
+    return query;
   }
 
   bool get isNotEmpty {
-    return search != null ||
+    return searchTerm != null ||
         type != null ||
-        location != null ||
+        town != null ||
+        region != null ||
         minSalary != null ||
         maxSalary != null ||
         tags.isNotEmpty;
@@ -57,7 +84,8 @@ class JobFilters {
   int get activeFilterCount {
     int count = 0;
     if (type != null) count++;
-    if (location != null) count++;
+    if (town != null) count++;
+    if (region != null) count++;
     if (minSalary != null || maxSalary != null) count++;
     if (tags.isNotEmpty) count++;
     return count;

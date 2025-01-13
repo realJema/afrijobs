@@ -1,7 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/home_screen.dart';
+import 'config/supabase_config.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    await Supabase.initialize(
+      url: SupabaseConfig.url,
+      anonKey: SupabaseConfig.anonKey,
+      debug: true, // Enable debug mode
+    );
+    print('Supabase initialized successfully');
+    print('URL: ${SupabaseConfig.url}');
+  } catch (e) {
+    print('Error initializing Supabase: $e');
+  }
+  
   runApp(const AfriJobsApp());
 }
 
@@ -19,7 +35,6 @@ class AfriJobsApp extends StatelessWidget {
           seedColor: const Color(0xFF2D4B4D),
           primary: const Color(0xFF2D4B4D),
         ),
-        // Using system fonts instead of Google Fonts
         textTheme: const TextTheme(
           displayLarge: TextStyle(
             fontSize: 24,
