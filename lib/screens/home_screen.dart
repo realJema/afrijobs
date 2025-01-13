@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/job.dart';
 import '../models/job_filters.dart';
 import '../providers/filter_provider.dart';
+import '../services/auth_service.dart';
 import '../services/job_service.dart';
 import '../widgets/job_card.dart';
 import '../widgets/job_card_skeleton.dart';
@@ -218,49 +219,49 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('AfriJobs'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: () {
+              Navigator.pushNamed(context, '/filter');
+            },
+          ),
+          GestureDetector(
+            onTap: () {
+              Navigator.pushNamed(context, '/profile');
+            },
+            child: Container(
+              margin: const EdgeInsets.only(right: 16),
+              width: 35,
+              height: 35,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey[300],
+              ),
+              child: ClipOval(
+                child: FutureBuilder<Map<String, dynamic>?>(
+                  future: AuthService().getCurrentUserProfile(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData && snapshot.data?['avatar_url'] != null) {
+                      return Image.network(
+                        snapshot.data!['avatar_url'],
+                        fit: BoxFit.cover,
+                      );
+                    }
+                    return const Icon(Icons.person);
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       backgroundColor: Colors.grey[50],
       body: SafeArea(
         child: Column(
           children: [
-            // Fixed Top Bar (only menu and notification)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.menu),
-                    onPressed: () {},
-                  ),
-                  Row(
-                    children: [
-                      TextButton.icon(
-                        onPressed: () {
-                          // TODO: Navigate to post job screen
-                        },
-                        icon: const Icon(Icons.add, color: Color(0xFF2D4A3E)),
-                        label: const Text(
-                          'Post a job',
-                          style: TextStyle(
-                            color: Color(0xFF2D4A3E),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.notifications_outlined),
-                        onPressed: () {},
-                      ),
-                      const CircleAvatar(
-                        radius: 16,
-                        backgroundImage: NetworkImage('https://placeholder.com/48x48'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
             // Scrollable Content
             Expanded(
               child: CustomScrollView(

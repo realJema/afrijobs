@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'screens/home_screen.dart';
-import 'config/supabase_config.dart';
 import 'providers/filter_provider.dart';
+import 'screens/splash_screen.dart';
+import 'screens/signin_screen.dart';
+import 'screens/signup_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/profile_screen.dart';
+import 'config/supabase_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,10 +46,10 @@ class AfriJobsApp extends StatelessWidget {
       title: 'AfriJobs',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: const Color(0xFF2D4B4D),
+        primaryColor: const Color(0xFF2D4A3E),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2D4B4D),
-          primary: const Color(0xFF2D4B4D),
+          seedColor: const Color(0xFF2D4A3E),
+          primary: const Color(0xFF2D4A3E),
         ),
         textTheme: const TextTheme(
           displayLarge: TextStyle(
@@ -62,7 +66,14 @@ class AfriJobsApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const SplashScreen(),
+        '/signin': (context) => const SignInScreen(),
+        '/signup': (context) => const SignUpScreen(),
+        '/home': (context) => const HomeScreen(),
+        '/profile': (context) => const ProfileScreen(),
+      },
     );
   }
 }

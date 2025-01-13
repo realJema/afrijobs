@@ -182,3 +182,110 @@ CREATE POLICY "Allow public read access" ON jobs FOR SELECT USING (true);
 CREATE POLICY "Allow public read access" ON towns FOR SELECT USING (true);
 CREATE POLICY "Allow public read access" ON job_types FOR SELECT USING (true);
 CREATE POLICY "Allow public read access" ON tags FOR SELECT USING (true);
+
+-- Create profiles table
+CREATE TABLE public.profiles (
+  id uuid references auth.users on delete cascade primary key,
+  email text unique not null,
+  full_name text,
+  avatar_url text,
+  phone_number text,
+  location text,
+  bio text,
+  resume_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Create saved_jobs table for bookmarking jobs
+CREATE TABLE public.saved_jobs (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references public.profiles(id) on delete cascade,
+  job_id uuid references public.jobs(id) on delete cascade,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(user_id, job_id)
+);
+
+-- Create job_applications table
+CREATE TABLE public.job_applications (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references public.profiles(id) on delete cascade,
+  job_id uuid references public.jobs(id) on delete cascade,
+  status text check (status in ('pending', 'reviewed', 'shortlisted', 'rejected', 'accepted')) default 'pending',
+  cover_letter text,
+  resume_url text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  unique(user_id, job_id)
+);
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.saved_jobs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.job_applications ENABLE ROW LEVEL SECURITY;
+
+-- Create policies
+CREATE POLICY "Public profiles are viewable by everyone" ON public.profiles
+  FOR SELECT USING (true);
+
+CREATE POLICY "Users can insert their own profile" ON public.profiles
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Users can update their own profile" ON public.profiles
+  FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Users can view their saved jobs" ON public.saved_jobs
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can save jobs" ON public.saved_jobs
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can unsave jobs" ON public.saved_jobs
+  FOR DELETE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can view their applications" ON public.job_applications
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can apply for jobs" ON public.job_applications
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their applications" ON public.job_applications
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- Create function to handle user creation
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name)
+  VALUES (new.id, new.email, new.raw_user_meta_data->>'full_name');
+  RETURN new;
+END;
+$$;
+
+-- Create trigger for new user creation
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- Create function to update timestamps
+CREATE OR REPLACE FUNCTION public.handle_updated_at()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN new;
+END;
+$$;
+
+-- Create triggers for updating timestamps
+CREATE TRIGGER handle_profiles_updated_at
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_updated_at();
+
+CREATE TRIGGER handle_job_applications_updated_at
+  BEFORE UPDATE ON public.job_applications
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_updated_at();
