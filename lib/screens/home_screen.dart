@@ -6,6 +6,7 @@ import '../models/job_filters.dart';
 import '../providers/filter_provider.dart';
 import '../services/job_service.dart';
 import '../widgets/job_card.dart';
+import '../widgets/job_card_skeleton.dart';
 import 'filter_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -20,7 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _searchController = TextEditingController();
   List<Job>? _jobs;
   String? _error;
-  bool _isLoading = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -159,6 +160,61 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildJobList() {
+    if (_isLoading) {
+      return SliverPadding(
+        padding: const EdgeInsets.all(16.0),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => const JobCardSkeleton(),
+            childCount: 5, // Show 5 skeleton items while loading
+          ),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _error!,
+                style: TextStyle(color: Colors.red[700]),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadJobs,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_jobs == null || _jobs!.isEmpty) {
+      return const SliverFillRemaining(
+        child: Center(child: Text('No jobs found')),
+      );
+    }
+
+    return SliverPadding(
+      padding: const EdgeInsets.all(16.0),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) => Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: JobCard(job: _jobs![index]),
+          ),
+          childCount: _jobs!.length,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -258,88 +314,45 @@ class _HomeScreenState extends State<HomeScreen> {
                   SliverToBoxAdapter(
                     child: _buildFilterPills(),
                   ),
-
-                  if (_isLoading)
-                    const SliverFillRemaining(
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  else if (_error != null)
-                    SliverFillRemaining(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                  // Analytics Card
+                  SliverPadding(
+                    padding: const EdgeInsets.all(16.0),
+                    sliver: SliverToBoxAdapter(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2D4A3E),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              _error!,
-                              style: TextStyle(color: Colors.red[700]),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _loadJobs,
-                              child: const Text('Retry'),
-                            ),
+                            _buildAnalyticItem('Available\nPositions', '${_jobs?.length ?? 0}'),
+                            Container(width: 1, height: 40, color: Colors.white24),
+                            _buildAnalyticItem('Applied\nJobs', '0'),
+                            Container(width: 1, height: 40, color: Colors.white24),
+                            _buildAnalyticItem('Unread\nMessages', '0'),
                           ],
                         ),
                       ),
-                    )
-                  else if (_jobs == null || _jobs!.isEmpty)
-                    const SliverFillRemaining(
-                      child: Center(child: Text('No jobs found')),
-                    )
-                  else ...[
-                    // Analytics Card
-                    SliverPadding(
-                      padding: const EdgeInsets.all(16.0),
-                      sliver: SliverToBoxAdapter(
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2D4A3E),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              _buildAnalyticItem('Available\nPositions', '${_jobs!.length}'),
-                              Container(width: 1, height: 40, color: Colors.white24),
-                              _buildAnalyticItem('Applied\nJobs', '0'),
-                              Container(width: 1, height: 40, color: Colors.white24),
-                              _buildAnalyticItem('Unread\nMessages', '0'),
-                            ],
-                          ),
-                        ),
-                      ),
                     ),
+                  ),
 
-                    // Recommendations Title
-                    const SliverPadding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.0),
-                      sliver: SliverToBoxAdapter(
-                        child: Text(
-                          'Recommended Jobs',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
+                  // Recommendations Title
+                  const SliverPadding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0),
+                    sliver: SliverToBoxAdapter(
+                      child: Text(
+                        'Recommended Jobs',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-
-                    // Jobs List
-                    SliverPadding(
-                      padding: const EdgeInsets.all(16.0),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) => Padding(
-                            padding: const EdgeInsets.only(bottom: 16.0),
-                            child: JobCard(job: _jobs![index]),
-                          ),
-                          childCount: _jobs!.length,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
+                  
+                  _buildJobList(),
                 ],
               ),
             ),
