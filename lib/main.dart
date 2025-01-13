@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/home_screen.dart';
 import 'config/supabase_config.dart';
-import 'services/filter_service.dart'; // Assuming FilterService is in this file
+import 'providers/filter_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,10 +20,17 @@ void main() async {
     print('Error initializing Supabase: $e');
   }
   
-  // Initialize filter data
-  await FilterService.instance.initialize();
+  final filterProvider = FilterProvider();
+  await filterProvider.initializeFilterData();
 
-  runApp(const AfriJobsApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<FilterProvider>.value(value: filterProvider),
+      ],
+      child: const AfriJobsApp(),
+    ),
+  );
 }
 
 class AfriJobsApp extends StatelessWidget {

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/job.dart';
 import '../models/job_filters.dart';
+import '../providers/filter_provider.dart';
 import '../services/job_service.dart';
 import '../widgets/job_card.dart';
 import 'filter_screen.dart';
@@ -16,21 +18,13 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _jobService = JobService();
   final _searchController = TextEditingController();
-  JobFilters _currentFilters = JobFilters();
   List<Job>? _jobs;
   String? _error;
   bool _isLoading = false;
 
-  // Cache for filter data
-  Map<String, List<String>> _townsByRegion = {};
-  List<String> _jobTypes = [];
-  List<String> _availableTags = [];
-  bool _isFilterDataLoaded = false;
-
   @override
   void initState() {
     super.initState();
-    _loadFilterData();
     _loadJobs();
   }
 
@@ -40,25 +34,6 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _loadFilterData() async {
-    if (_isFilterDataLoaded) return;
-
-    try {
-      final towns = await _jobService.getTowns();
-      final jobTypes = await _jobService.getJobTypes();
-      final tags = await _jobService.getTags();
-
-      setState(() {
-        _townsByRegion = towns;
-        _jobTypes = jobTypes;
-        _availableTags = tags;
-        _isFilterDataLoaded = true;
-      });
-    } catch (e) {
-      print('Error loading filter data: $e');
-    }
-  }
-
   Future<void> _loadJobs() async {
     setState(() {
       _isLoading = true;
@@ -66,218 +41,121 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      final jobs = await _jobService.getJobs(filters: _currentFilters);
-      setState(() {
-        _jobs = jobs;
-        _isLoading = false;
-      });
+      final filters = context.read<FilterProvider>().filters;
+      final jobs = await _jobService.getJobs(filters: filters);
+      if (mounted) {
+        setState(() {
+          _jobs = jobs;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 
   void _onSearch(String value) {
-    setState(() {
-      _currentFilters = _currentFilters.copyWith(searchTerm: value);
-    });
+    final filterProvider = context.read<FilterProvider>();
+    final currentFilters = filterProvider.filters;
+    filterProvider.updateFilters(currentFilters.copyWith(searchTerm: value));
     _loadJobs();
   }
 
-  Future<void> _showFilters() async {
-    if (!_isFilterDataLoaded) {
-      await _loadFilterData();
-    }
-
-    final result = await Navigator.push<JobFilters>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => FilterScreen(
-          initialFilters: _currentFilters,
-          townsByRegion: _townsByRegion,
-          jobTypes: _jobTypes,
-          availableTags: _availableTags,
-        ),
-      ),
-    );
-
-    if (result != null) {
-      setState(() {
-        _currentFilters = result;
-      });
-      _loadJobs();
-    }
-  }
-
-  Widget _buildFilterPill(String text, {required VoidCallback onRemove}) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8, bottom: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.green[50],
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.green[200]!),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              text,
-              style: TextStyle(
-                color: Colors.green[900],
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: onRemove,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                child: Icon(
-                  Icons.close,
-                  size: 20,
-                  color: Colors.green[900],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildFilterPills() {
-    final List<Widget> pills = [];
+    final filterProvider = context.watch<FilterProvider>();
+    final filters = filterProvider.filters;
+    final pills = <Widget>[];
 
-    // Add search term pill
-    if (_currentFilters.searchTerm != null && _currentFilters.searchTerm!.isNotEmpty) {
-      pills.add(_buildFilterPill(
-        'Search: ${_currentFilters.searchTerm}',
-        onRemove: () {
-          print('Removing search filter'); // Debug log
-          setState(() {
-            _currentFilters = _currentFilters.copyWith(searchTerm: null);
-          });
-          _loadJobs();
+    if (filters.type != null) {
+      pills.add(_buildPill(
+        filters.type!,
+        () {
+          filterProvider.updateFilters(filters.copyWith(type: null));
         },
       ));
     }
 
-    // Add job type pill
-    if (_currentFilters.type != null && _currentFilters.type!.isNotEmpty) {
-      pills.add(_buildFilterPill(
-        _currentFilters.type!,
-        onRemove: () {
-          print('Removing job type filter'); // Debug log
-          setState(() {
-            _currentFilters = _currentFilters.copyWith(type: null);
-          });
-          _loadJobs();
+    if (filters.town != null) {
+      pills.add(_buildPill(
+        filters.town!,
+        () {
+          filterProvider.updateFilters(filters.copyWith(town: null, region: null));
         },
       ));
     }
 
-    // Add location pills
-    if (_currentFilters.region != null && _currentFilters.region!.isNotEmpty) {
-      pills.add(_buildFilterPill(
-        'Region: ${_currentFilters.region}',
-        onRemove: () {
-          print('Removing region filter'); // Debug log
-          setState(() {
-            _currentFilters = _currentFilters.copyWith(region: null, town: null);
-          });
-          _loadJobs();
-        },
-      ));
-    }
-    if (_currentFilters.town != null && _currentFilters.town!.isNotEmpty) {
-      pills.add(_buildFilterPill(
-        'Town: ${_currentFilters.town}',
-        onRemove: () {
-          print('Removing town filter'); // Debug log
-          setState(() {
-            _currentFilters = _currentFilters.copyWith(town: null);
-          });
-          _loadJobs();
+    if (filters.dateRange != null) {
+      pills.add(_buildPill(
+        filters.dateRange!,
+        () {
+          filterProvider.updateFilters(filters.copyWith(dateRange: null));
         },
       ));
     }
 
-    // Add salary range pills
-    final defaultMin = '0';
-    final defaultMax = '200';
-    if (_currentFilters.minSalary != null && 
-        _currentFilters.minSalary!.isNotEmpty && 
-        _currentFilters.minSalary != defaultMin) {
-      pills.add(_buildFilterPill(
-        'Min: \$${_currentFilters.minSalary}K',
-        onRemove: () {
-          print('Removing min salary filter'); // Debug log
-          setState(() {
-            _currentFilters = _currentFilters.copyWith(minSalary: defaultMin);
-          });
-          _loadJobs();
-        },
-      ));
-    }
-    if (_currentFilters.maxSalary != null && 
-        _currentFilters.maxSalary!.isNotEmpty && 
-        _currentFilters.maxSalary != defaultMax) {
-      pills.add(_buildFilterPill(
-        'Max: \$${_currentFilters.maxSalary}K',
-        onRemove: () {
-          print('Removing max salary filter'); // Debug log
-          setState(() {
-            _currentFilters = _currentFilters.copyWith(maxSalary: defaultMax);
-          });
-          _loadJobs();
-        },
-      ));
-    }
-
-    // Add date range pill
-    if (_currentFilters.dateRange != null && _currentFilters.dateRange!.isNotEmpty) {
-      pills.add(_buildFilterPill(
-        'Date: ${_currentFilters.dateRange}',
-        onRemove: () {
-          print('Removing date range filter'); // Debug log
-          setState(() {
-            _currentFilters = _currentFilters.copyWith(dateRange: null);
-          });
-          _loadJobs();
-        },
-      ));
-    }
-
-    // Add tag pills
-    for (final tag in _currentFilters.tags) {
-      pills.add(_buildFilterPill(
+    for (final tag in filters.tags) {
+      pills.add(_buildPill(
         tag,
-        onRemove: () {
-          print('Removing tag filter: $tag'); // Debug log
-          setState(() {
-            final newTags = List<String>.from(_currentFilters.tags)..remove(tag);
-            _currentFilters = _currentFilters.copyWith(tags: newTags);
-          });
-          _loadJobs();
+        () {
+          final newTags = List<String>.from(filters.tags)..remove(tag);
+          filterProvider.updateFilters(filters.copyWith(tags: newTags));
         },
       ));
     }
 
-    if (pills.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: pills,
+    );
+  }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: pills,
+  Widget _buildPill(String text, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE8F5E9),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: Color(0xFF2D4A3E),
+            fontSize: 14,
+          ),
+        ),
       ),
+    );
+  }
+
+  Widget _buildAnalyticItem(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
@@ -364,7 +242,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     delegate: _StickySearchBarDelegate(
                       searchController: _searchController,
                       onSearch: _onSearch,
-                      showFilters: _showFilters,
+                      showFilters: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const FilterScreen(),
+                          ),
+                        );
+                        _loadJobs();
+                      },
                     ),
                   ),
 
@@ -460,30 +346,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildAnalyticItem(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ],
     );
   }
 }
