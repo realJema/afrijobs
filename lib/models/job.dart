@@ -2,54 +2,45 @@ class Job {
   final String id;
   final String title;
   final String company;
-  final String? companyLogo;
+  final String location;
   final String description;
   final String? type;
-  final int? minSalary;
-  final int? maxSalary;
   final List<String> tags;
-  final String? requirements;
-  final String? contact;
-  final String? townName;
-  final String? region;
+  final String? minSalary;
+  final String? maxSalary;
   final int? applicants;
   final DateTime createdAt;
+  final String? logo;
 
   Job({
     required this.id,
     required this.title,
     required this.company,
-    this.companyLogo,
+    required this.location,
     required this.description,
     this.type,
+    List<String>? tags,
     this.minSalary,
     this.maxSalary,
-    required this.tags,
-    this.requirements,
-    this.contact,
-    this.townName,
-    this.region,
     this.applicants,
     required this.createdAt,
-  });
+    this.logo,
+  }) : tags = tags ?? [];
 
   factory Job.fromJson(Map<String, dynamic> json) {
     return Job(
-      id: json['id'] as String,
-      title: json['title'] as String,
-      company: json['company'] as String,
-      companyLogo: json['company_logo'] as String?,
-      description: json['description'] as String,
-      type: json['type'] as String?,
-      minSalary: json['min_salary'] as int?,
-      maxSalary: json['max_salary'] as int?,
-      tags: List<String>.from(json['tags'] ?? []),
-      requirements: json['requirements'] as String?,
-      contact: json['contact'] as String?,
-      townName: json['town_name'] as String?,
-      region: json['region'] as String?,
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      company: json['company'] as String? ?? '',
+      location: json['location'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      type: json['job_types']?['name'] as String?,
+      tags: (json['tag_names'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      minSalary: json['min_salary']?.toString(),
+      maxSalary: json['max_salary']?.toString(),
       applicants: json['applicants'] as int?,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String? ?? DateTime.now().toIso8601String()),
+      logo: json['logo'] as String?,
     );
   }
 
@@ -58,18 +49,15 @@ class Job {
       'id': id,
       'title': title,
       'company': company,
-      'company_logo': companyLogo,
+      'location': location,
       'description': description,
-      'type': type,
+      'job_type_id': null,
+      'tag_names': tags,
       'min_salary': minSalary,
       'max_salary': maxSalary,
-      'tags': tags,
-      'requirements': requirements,
-      'contact': contact,
-      'town_name': townName,
-      'region': region,
       'applicants': applicants,
       'created_at': createdAt.toIso8601String(),
+      'logo': logo,
     };
   }
 }

@@ -4,8 +4,17 @@ import '../services/job_service.dart';
 
 class FilterScreen extends StatefulWidget {
   final JobFilters initialFilters;
+  final Map<String, List<String>> townsByRegion;
+  final List<String> jobTypes;
+  final List<String> availableTags;
 
-  const FilterScreen({super.key, required this.initialFilters});
+  const FilterScreen({
+    super.key,
+    required this.initialFilters,
+    required this.townsByRegion,
+    required this.jobTypes,
+    required this.availableTags,
+  });
 
   @override
   State<FilterScreen> createState() => _FilterScreenState();
@@ -16,10 +25,18 @@ class _FilterScreenState extends State<FilterScreen> {
   String? _selectedType;
   String? _selectedTown;
   String? _selectedRegion;
+  String? _selectedDateRange;
   List<String> _selectedTags = [];
   RangeValues _salaryRange = const RangeValues(0, 200);
-  Map<String, List<String>> _townsByRegion = {};
-  bool _isLoading = true;
+  RangeValues _applicantsRange = const RangeValues(0, 100);
+  bool _isLoading = false;
+
+  final List<String> _dateRanges = [
+    'Last 24 hours',
+    'Last week',
+    'Last 30 days',
+    'All time',
+  ];
 
   @override
   void initState() {
@@ -32,21 +49,44 @@ class _FilterScreenState extends State<FilterScreen> {
       double.tryParse(widget.initialFilters.minSalary ?? '0') ?? 0,
       double.tryParse(widget.initialFilters.maxSalary ?? '200') ?? 200,
     );
-    _loadData();
   }
 
-  Future<void> _loadData() async {
-    try {
-      final towns = await _jobService.getTowns();
-      setState(() {
-        _townsByRegion = towns;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+  void _onRegionChanged(String? region) {
+    setState(() {
+      _selectedRegion = region;
+      // Reset town if region changes
+      if (_selectedTown != null && !widget.townsByRegion[region]!.contains(_selectedTown)) {
+        _selectedTown = null;
+      }
+    });
+  }
+
+  void _applyFilters() {
+    final filters = JobFilters(
+      type: _selectedType,
+      town: _selectedTown,
+      region: _selectedRegion,
+      tags: _selectedTags,
+      minSalary: _salaryRange.start.toStringAsFixed(0),
+      maxSalary: _salaryRange.end.toStringAsFixed(0),
+      dateRange: _selectedDateRange,
+      minApplicants: _applicantsRange.start.round().toString(),
+      maxApplicants: _applicantsRange.end.round().toString(),
+    );
+    Navigator.pop(context, filters);
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24, bottom: 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
   }
 
   @override
@@ -61,8 +101,10 @@ class _FilterScreenState extends State<FilterScreen> {
                 _selectedType = null;
                 _selectedTown = null;
                 _selectedRegion = null;
+                _selectedDateRange = null;
                 _selectedTags = [];
                 _salaryRange = const RangeValues(0, 200);
+                _applicantsRange = const RangeValues(0, 100);
               });
             },
             child: const Text('Reset'),
@@ -74,60 +116,63 @@ class _FilterScreenState extends State<FilterScreen> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                const Text(
-                  'Job Type',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                // Date Range Filter
+                _buildSectionTitle('Date Posted'),
+                DropdownButtonFormField<String>(
+                  value: _selectedDateRange,
+                  decoration: const InputDecoration(
+                    hintText: 'Select time range',
+                    border: OutlineInputBorder(),
                   ),
+                  items: _dateRanges
+                      .map((range) => DropdownMenuItem(
+                            value: range,
+                            child: Text(range),
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedDateRange = value;
+                    });
+                  },
                 ),
-                const SizedBox(height: 8),
+
+                // Job Type Filter
+                _buildSectionTitle('Job Type'),
                 DropdownButtonFormField<String>(
                   value: _selectedType,
                   decoration: const InputDecoration(
                     hintText: 'Select job type',
                     border: OutlineInputBorder(),
                   ),
-                  items: const [
-                    DropdownMenuItem(value: 'Full-time', child: Text('Full-time')),
-                    DropdownMenuItem(value: 'Part-time', child: Text('Part-time')),
-                    DropdownMenuItem(value: 'Contract', child: Text('Contract')),
-                    DropdownMenuItem(value: 'Internship', child: Text('Internship')),
-                    DropdownMenuItem(value: 'Freelance', child: Text('Freelance')),
-                  ],
+                  items: widget.jobTypes
+                      .map((type) => DropdownMenuItem(
+                            value: type,
+                            child: Text(type),
+                          ))
+                      .toList(),
                   onChanged: (value) {
                     setState(() {
                       _selectedType = value;
                     });
                   },
                 ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Location',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
+
+                // Location Filter
+                _buildSectionTitle('Location'),
                 DropdownButtonFormField<String>(
                   value: _selectedRegion,
                   decoration: const InputDecoration(
                     hintText: 'Select region',
                     border: OutlineInputBorder(),
                   ),
-                  items: _townsByRegion.keys
+                  items: widget.townsByRegion.keys
                       .map((region) => DropdownMenuItem(
                             value: region,
                             child: Text(region),
                           ))
                       .toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedRegion = value;
-                      _selectedTown = null;
-                    });
-                  },
+                  onChanged: _onRegionChanged,
                 ),
                 if (_selectedRegion != null) ...[
                   const SizedBox(height: 16),
@@ -137,7 +182,7 @@ class _FilterScreenState extends State<FilterScreen> {
                       hintText: 'Select town',
                       border: OutlineInputBorder(),
                     ),
-                    items: _townsByRegion[_selectedRegion]!
+                    items: widget.townsByRegion[_selectedRegion]!
                         .map((town) => DropdownMenuItem(
                               value: town,
                               child: Text(town),
@@ -150,15 +195,9 @@ class _FilterScreenState extends State<FilterScreen> {
                     },
                   ),
                 ],
-                const SizedBox(height: 24),
-                const Text(
-                  'Salary Range (in thousands)',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
+
+                // Salary Range Filter
+                _buildSectionTitle('Salary Range (in thousands)'),
                 RangeSlider(
                   values: _salaryRange,
                   min: 0,
@@ -174,26 +213,93 @@ class _FilterScreenState extends State<FilterScreen> {
                     });
                   },
                 ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('\$${_salaryRange.start.round()}K',
+                          style: TextStyle(color: Colors.grey[600])),
+                      Text('\$${_salaryRange.end.round()}K',
+                          style: TextStyle(color: Colors.grey[600])),
+                    ],
+                  ),
+                ),
+
+                // Applicants Range Filter
+                _buildSectionTitle('Number of Applicants'),
+                RangeSlider(
+                  values: _applicantsRange,
+                  min: 0,
+                  max: 100,
+                  divisions: 10,
+                  labels: RangeLabels(
+                    '${_applicantsRange.start.round()}',
+                    '${_applicantsRange.end.round()}',
+                  ),
+                  onChanged: (values) {
+                    setState(() {
+                      _applicantsRange = values;
+                    });
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('${_applicantsRange.start.round()}',
+                          style: TextStyle(color: Colors.grey[600])),
+                      Text('${_applicantsRange.end.round()}',
+                          style: TextStyle(color: Colors.grey[600])),
+                    ],
+                  ),
+                ),
+
+                // Skills/Tags Filter
+                _buildSectionTitle('Skills'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: widget.availableTags.map((tag) {
+                    final isSelected = _selectedTags.contains(tag);
+                    return FilterChip(
+                      label: Text(tag),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _selectedTags.add(tag);
+                          } else {
+                            _selectedTags.remove(tag);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
               ],
             ),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: ElevatedButton(
-            onPressed: () {
-              Navigator.pop(
-                context,
-                JobFilters(
-                  type: _selectedType,
-                  town: _selectedTown,
-                  region: _selectedRegion,
-                  tags: _selectedTags,
-                  minSalary: _salaryRange.start.round().toString(),
-                  maxSalary: _salaryRange.end.round().toString(),
-                ),
-              );
-            },
-            child: const Text('Apply Filters'),
+            onPressed: _applyFilters,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2D4A3E),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Apply Filters',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
           ),
         ),
       ),

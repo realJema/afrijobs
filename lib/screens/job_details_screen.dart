@@ -73,24 +73,30 @@ class JobDetailsScreen extends StatelessWidget {
                               shape: BoxShape.circle,
                             ),
                             child: Container(
-                              width: 64,
-                              height: 64,
+                              width: 80,
+                              height: 80,
                               decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.grey[100],
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 10,
+                                  ),
+                                ],
                               ),
-                              child: job.companyLogo != null
-                                  ? ClipOval(
+                              child: job.logo != null && job.logo!.isNotEmpty
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(20),
                                       child: Image.network(
-                                        job.companyLogo!,
+                                        job.logo!,
                                         fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return const Icon(Icons.business, size: 40, color: Colors.grey);
+                                        },
                                       ),
                                     )
-                                  : Icon(
-                                      Icons.business,
-                                      size: 32,
-                                      color: Colors.grey[400],
-                                    ),
+                                  : const Icon(Icons.business, size: 40, color: Colors.grey),
                             ),
                           ),
                         ),
@@ -112,7 +118,7 @@ class JobDetailsScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  '${job.company} • ${job.townName ?? ''}, ${job.region ?? ''}',
+                                  '${job.company} • ${job.location}',
                                   style: TextStyle(
                                     fontSize: 16,
                                     color: Colors.grey[600],

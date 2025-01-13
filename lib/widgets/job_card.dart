@@ -45,21 +45,27 @@ class JobCard extends StatelessWidget {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                      ),
+                    ],
                   ),
-                  child: job.companyLogo != null
+                  child: job.logo != null && job.logo!.isNotEmpty
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: Image.network(
-                            job.companyLogo!,
+                            job.logo!,
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.business, size: 30, color: Colors.grey);
+                            },
                           ),
                         )
-                      : Icon(
-                          Icons.business,
-                          color: Colors.grey[400],
-                        ),
+                      : const Icon(Icons.business, size: 30, color: Colors.grey),
                 ),
                 const SizedBox(width: 16),
                 // Job Info
@@ -92,7 +98,7 @@ class JobCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${job.townName}, ${job.region}',
+                            job.location,
                             style: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 14,

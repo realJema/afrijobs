@@ -1,0 +1,240 @@
+[
+  {
+    "table_name": "job_tags",
+    "column_name": "job_id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "job_tags",
+    "column_name": "tag_id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "job_tags",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "job_types",
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "job_types",
+    "column_name": "name",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "character_maximum_length": 100
+  },
+  {
+    "table_name": "job_types",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "jobs",
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "jobs",
+    "column_name": "title",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "character_maximum_length": 255
+  },
+  {
+    "table_name": "jobs",
+    "column_name": "company",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "character_maximum_length": 255
+  },
+  {
+    "table_name": "jobs",
+    "column_name": "logo_url",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "jobs",
+    "column_name": "description",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "jobs",
+    "column_name": "requirements",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "jobs",
+    "column_name": "contact_email",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "character_maximum_length": 255
+  },
+  {
+    "table_name": "jobs",
+    "column_name": "contact_phone",
+    "data_type": "character varying",
+    "is_nullable": "YES",
+    "character_maximum_length": 50
+  },
+  {
+    "table_name": "jobs",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "jobs",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "jobs",
+    "column_name": "town_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "jobs",
+    "column_name": "min_salary",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "jobs",
+    "column_name": "max_salary",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "jobs",
+    "column_name": "company_logo",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "jobs",
+    "column_name": "applicants",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "jobs",
+    "column_name": "job_type_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "tags",
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "tags",
+    "column_name": "name",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "character_maximum_length": 100
+  },
+  {
+    "table_name": "tags",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "towns",
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "character_maximum_length": null
+  },
+  {
+    "table_name": "towns",
+    "column_name": "name",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "character_maximum_length": 255
+  },
+  {
+    "table_name": "towns",
+    "column_name": "region",
+    "data_type": "character varying",
+    "is_nullable": "NO",
+    "character_maximum_length": 255
+  },
+  {
+    "table_name": "towns",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "YES",
+    "character_maximum_length": null
+  }
+]
+
+[
+  {
+    "source_table": "job_tags",
+    "source_column": "job_id",
+    "target_table": "jobs",
+    "target_column": "id",
+    "update_rule": "NO ACTION",
+    "delete_rule": "CASCADE"
+  },
+  {
+    "source_table": "job_tags",
+    "source_column": "tag_id",
+    "target_table": "tags",
+    "target_column": "id",
+    "update_rule": "NO ACTION",
+    "delete_rule": "CASCADE"
+  },
+  {
+    "source_table": "jobs",
+    "source_column": "job_type_id",
+    "target_table": "job_types",
+    "target_column": "id",
+    "update_rule": "NO ACTION",
+    "delete_rule": "NO ACTION"
+  },
+  {
+    "source_table": "jobs",
+    "source_column": "town_id",
+    "target_table": "towns",
+    "target_column": "id",
+    "update_rule": "NO ACTION",
+    "delete_rule": "NO ACTION"
+  }
+]

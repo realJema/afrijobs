@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/home_screen.dart';
 import 'config/supabase_config.dart';
+import 'services/filter_service.dart'; // Assuming FilterService is in this file
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +19,9 @@ void main() async {
     print('Error initializing Supabase: $e');
   }
   
+  // Initialize filter data
+  await FilterService.instance.initialize();
+
   runApp(const AfriJobsApp());
 }
 

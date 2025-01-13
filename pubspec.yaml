@@ -13,6 +13,7 @@ dependencies:
   http: ^1.1.0
   supabase_flutter: ^1.10.25
   intl: ^0.18.1
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:
