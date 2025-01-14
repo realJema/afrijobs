@@ -37,28 +37,41 @@ class StorageService {
         return null;
       }
 
-      // Generate filename
+      // Generate filename with timestamp to avoid conflicts
       final fileExt = p.extension(pickedFile.path).toLowerCase();
       if (!_isValidImageExtension(fileExt)) {
         print('Invalid image format: $fileExt');
         return null;
       }
 
-      final fileName = 'profile_$userId$fileExt';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = 'profile_${userId}_$timestamp$fileExt';
 
       try {
+        // Ensure user is authenticated
+        final user = _supabase.auth.currentUser;
+        if (user == null || user.id != userId) {
+          print('User not authenticated or ID mismatch');
+          return null;
+        }
+
         // Upload bytes to Supabase Storage
         await _supabase.storage.from('avatars').uploadBinary(
           fileName,
           bytes,
-          fileOptions: const FileOptions(
+          fileOptions: FileOptions(
             upsert: true,
-            contentType: 'image/jpeg',
+            contentType: _getContentType(fileExt),
           ),
         );
 
         // Get the public URL
-        return _supabase.storage.from('avatars').getPublicUrl(fileName);
+        final publicUrl = _supabase.storage.from('avatars').getPublicUrl(fileName);
+        print('Successfully uploaded image: $publicUrl');
+        return publicUrl;
+      } on StorageException catch (e) {
+        print('Storage error: ${e.message}, Status: ${e.statusCode}, Error: ${e.error}');
+        return null;
       } catch (e) {
         print('Error uploading to Supabase: $e');
         return null;
@@ -72,5 +85,19 @@ class StorageService {
   bool _isValidImageExtension(String ext) {
     final validExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
     return validExtensions.contains(ext.toLowerCase());
+  }
+
+  String _getContentType(String ext) {
+    switch (ext.toLowerCase()) {
+      case '.jpg':
+      case '.jpeg':
+        return 'image/jpeg';
+      case '.png':
+        return 'image/png';
+      case '.gif':
+        return 'image/gif';
+      default:
+        return 'image/jpeg';
+    }
   }
 }
