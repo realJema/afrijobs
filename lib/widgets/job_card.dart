@@ -55,7 +55,7 @@ class JobCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Company Logo
+                // Company Logo or Profile Image
                 Container(
                   width: 50,
                   height: 50,
@@ -69,18 +69,29 @@ class JobCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: job.logo != null && job.logo!.isNotEmpty
+                  child: job.avatarUrl != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: Image.network(
-                            job.logo!,
+                            job.avatarUrl!,
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return const Icon(Icons.business, size: 30, color: Colors.grey);
                             },
                           ),
                         )
-                      : const Icon(Icons.business, size: 30, color: Colors.grey),
+                      : (job.logo != null && job.logo!.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                job.logo!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(Icons.business, size: 30, color: Colors.grey);
+                                },
+                              ),
+                            )
+                          : const Icon(Icons.business, size: 30, color: Colors.grey)),
                 ),
                 const SizedBox(width: 16),
                 // Job Info

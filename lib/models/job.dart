@@ -19,6 +19,7 @@ class Job {
   final String? requirements;
   final String status;
   final DateTime? deadline;
+  final Map<String, dynamic>? profile;
 
   Job({
     required this.id,
@@ -41,6 +42,7 @@ class Job {
     this.requirements,
     this.status = 'active',
     this.deadline,
+    this.profile,
   }) : tags = tags ?? [],
        updatedAt = updatedAt ?? createdAt;
 
@@ -66,6 +68,7 @@ class Job {
       requirements: json['requirements'] as String?,
       status: json['status'] as String? ?? 'active',
       deadline: json['application_deadline'] != null ? DateTime.parse(json['application_deadline']) : null,
+      profile: json['profile'],
     );
   }
 
@@ -74,10 +77,13 @@ class Job {
       'id': id,
       'title': title,
       'company_id': companyId,
+      'company': company,
+      'logo': logo,
       'town_id': townId,
       'location': location,
       'description': description,
-      'tag_names': tags,
+      'type': type,
+      'tags': tags,
       'min_salary': minSalary,
       'max_salary': maxSalary,
       'applicants': applicants,
@@ -88,6 +94,11 @@ class Job {
       'requirements': requirements,
       'status': status,
       'application_deadline': deadline?.toIso8601String(),
+      'profile': profile,
     };
   }
+
+  String? get avatarUrl => profile?['avatar_url'] as String?;
+  String? get userFullName => profile?['full_name'] as String?;
+  String? get userLocation => profile?['location'] as String?;
 }

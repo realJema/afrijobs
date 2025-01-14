@@ -28,6 +28,11 @@ class JobService {
               tags (
                 name
               )
+            ),
+            profiles (
+              full_name,
+              avatar_url,
+              location
             )
           ''');
 
@@ -80,6 +85,11 @@ class JobService {
             jobData['tag_names'] = [];
           }
 
+          // Handle profile
+          if (job['profiles'] != null) {
+            jobData['profile'] = job['profiles'];
+          }
+
           return Job.fromJson(jobData);
         } catch (e) {
           print('Error parsing job: $e');
@@ -109,6 +119,11 @@ class JobService {
             towns (
               name,
               region
+            ),
+            profiles (
+              full_name,
+              avatar_url,
+              location
             )
           ''')
           .eq('id', id)
@@ -135,6 +150,11 @@ class JobService {
       // Handle location
       if (response['towns'] != null) {
         jobData['location'] = '${response['towns']['name']}, ${response['towns']['region']}';
+      }
+      
+      // Handle profile
+      if (response['profiles'] != null) {
+        jobData['profile'] = response['profiles'];
       }
       
       return Job.fromJson(jobData);
