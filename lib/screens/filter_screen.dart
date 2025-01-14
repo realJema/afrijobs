@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/job_filters.dart';
 import '../services/job_service.dart';
 import '../providers/filter_provider.dart';
+import '../utils/currency_formatter.dart';
 
 class FilterScreen extends StatefulWidget {
   const FilterScreen({super.key});
@@ -181,15 +182,15 @@ class _FilterScreenState extends State<FilterScreen> {
           ],
 
           // Salary Range Filter
-          _buildSectionTitle('Salary Range (in thousands)'),
+          _buildSectionTitle('Salary Range'),
           RangeSlider(
             values: _salaryRange,
             min: 0,
             max: 200,
             divisions: 20,
             labels: RangeLabels(
-              '\$${_salaryRange.start.round()}K',
-              '\$${_salaryRange.end.round()}K',
+              CurrencyFormatter.formatAmount(_salaryRange.start.round() * 1000),
+              CurrencyFormatter.formatAmount(_salaryRange.end.round() * 1000),
             ),
             onChanged: (values) {
               setState(() {
@@ -199,14 +200,18 @@ class _FilterScreenState extends State<FilterScreen> {
             },
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('\$${_salaryRange.start.round()}K',
-                    style: TextStyle(color: Colors.grey[600])),
-                Text('\$${_salaryRange.end.round()}K',
-                    style: TextStyle(color: Colors.grey[600])),
+                Text(
+                  CurrencyFormatter.formatAmount(_salaryRange.start.round() * 1000),
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+                Text(
+                  CurrencyFormatter.formatAmount(_salaryRange.end.round() * 1000),
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
               ],
             ),
           ),

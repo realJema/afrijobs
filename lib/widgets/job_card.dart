@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/job.dart';
 import '../screens/job_details_screen.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import '../utils/currency_formatter.dart';
 
 class JobCard extends StatelessWidget {
   final Job job;
@@ -185,11 +186,10 @@ class JobCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    '\$${job.minSalary}K - \$${job.maxSalary}K',
-                    style: const TextStyle(
-                      color: Color(0xFF2D4A3E),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                    CurrencyFormatter.formatSalaryRange(job.minSalary, job.maxSalary),
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
                     ),
                   ),
                 ),

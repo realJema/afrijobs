@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/job.dart';
+import '../utils/currency_formatter.dart';
 
 class JobDetailsScreen extends StatelessWidget {
   final Job job;
@@ -133,7 +134,12 @@ class JobDetailsScreen extends StatelessWidget {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    _buildInfoPill(Icons.attach_money, '\$${job.minSalary}K-${job.maxSalary}K', Colors.green.withOpacity(0.1), Colors.green),
+                                    _buildInfoPill(
+                                      Icons.attach_money, 
+                                      CurrencyFormatter.formatSalaryRange(job.minSalary, job.maxSalary), 
+                                      Colors.green.withOpacity(0.1), 
+                                      Colors.green
+                                    ),
                                     const SizedBox(width: 12),
                                     _buildInfoPill(Icons.work_outline, job.type ?? 'Full-time', Colors.orange.withOpacity(0.1), Colors.orange),
                                   ],

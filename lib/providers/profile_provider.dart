@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProfileProvider extends ChangeNotifier {
-  final _authService = AuthService();
+  final _supabase = Supabase.instance.client;
   Map<String, dynamic>? _profile;
   bool _isLoading = false;
 
@@ -15,9 +15,18 @@ class ProfileProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _profile = await _authService.getCurrentUserProfile();
+      final user = _supabase.auth.currentUser;
+      if (user == null) return;
+
+      final response = await _supabase
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .single();
+
+      _profile = response;
     } catch (e) {
-      debugPrint('Error loading profile: $e');
+      print('Error loading profile: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -26,24 +35,35 @@ class ProfileProvider extends ChangeNotifier {
 
   Future<void> updateProfile({
     String? fullName,
-    String? avatarUrl,
     String? phoneNumber,
     String? location,
     String? bio,
-    String? resumeUrl,
+    String? avatarUrl,
   }) async {
     try {
-      await _authService.updateProfile(
-        fullName: fullName,
-        avatarUrl: avatarUrl,
-        phoneNumber: phoneNumber,
-        location: location,
-        bio: bio,
-        resumeUrl: resumeUrl,
-      );
-      await loadProfile(); // Reload profile after update
+      final user = _supabase.auth.currentUser;
+      if (user == null) return;
+
+      final updates = {
+        if (fullName != null) 'full_name': fullName,
+        if (phoneNumber != null) 'phone_number': phoneNumber,
+        if (location != null) 'location': location,
+        if (bio != null) 'bio': bio,
+        if (avatarUrl != null) 'avatar_url': avatarUrl,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      final response = await _supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', user.id)
+          .select()
+          .single();
+
+      _profile = response;
+      notifyListeners();
     } catch (e) {
-      debugPrint('Error updating profile: $e');
+      print('Error updating profile: $e');
       rethrow;
     }
   }
