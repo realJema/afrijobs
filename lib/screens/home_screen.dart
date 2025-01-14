@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/job.dart';
 import '../models/job_filters.dart';
 import '../providers/filter_provider.dart';
+import '../providers/profile_provider.dart';
 import '../services/auth_service.dart';
 import '../services/job_service.dart';
 import '../widgets/job_card.dart';
@@ -222,11 +223,17 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('AfriJobs'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
+          TextButton.icon(
             onPressed: () {
-              Navigator.pushNamed(context, '/filter');
+              Navigator.pushNamed(context, '/add-job');
             },
+            icon: const Icon(Icons.add_circle_outline, color: Color(0xFF2D4A3E)),
+            label: const Text('Post Job'),
+            style: TextButton.styleFrom(
+              foregroundColor: Color(0xFF2D4A3E),
+              backgroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 16),
+            ),
           ),
           GestureDetector(
             onTap: () {
@@ -241,12 +248,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: Colors.grey[300],
               ),
               child: ClipOval(
-                child: FutureBuilder<Map<String, dynamic>?>(
-                  future: AuthService().getCurrentUserProfile(),
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData && snapshot.data?['avatar_url'] != null) {
+                child: Consumer<ProfileProvider>(
+                  builder: (context, provider, _) {
+                    final profile = provider.profile;
+                    if (profile != null && profile['avatar_url'] != null) {
                       return Image.network(
-                        snapshot.data!['avatar_url'],
+                        profile['avatar_url'],
                         fit: BoxFit.cover,
                       );
                     }
@@ -380,54 +387,36 @@ class _StickySearchBarDelegate extends SliverPersistentHeaderDelegate {
     return Container(
       color: Colors.grey[50],
       padding: const EdgeInsets.all(16.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.search, color: Colors.grey[400]),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: searchController,
-                      onChanged: onSearch,
-                      decoration: InputDecoration(
-                        hintText: 'Search jobs...',
-                        hintStyle: TextStyle(color: Colors.grey[400]),
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                ],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.search, color: Colors.grey[400]),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: searchController,
+                onChanged: onSearch,
+                decoration: InputDecoration(
+                  hintText: 'Search jobs...',
+                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  border: InputBorder.none,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: showFilters,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2D4A3E),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.tune, color: Colors.white),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'providers/filter_provider.dart';
+import 'providers/profile_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/signin_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/add_job_screen.dart';
 import 'config/supabase_config.dart';
 
 void main() async {
@@ -27,10 +29,14 @@ void main() async {
   final filterProvider = FilterProvider();
   await filterProvider.initializeFilterData();
 
+  final profileProvider = ProfileProvider();
+  await profileProvider.loadProfile();
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<FilterProvider>.value(value: filterProvider),
+        ChangeNotifierProvider<ProfileProvider>.value(value: profileProvider),
       ],
       child: const AfriJobsApp(),
     ),
@@ -73,6 +79,7 @@ class AfriJobsApp extends StatelessWidget {
         '/signup': (context) => const SignUpScreen(),
         '/home': (context) => const HomeScreen(),
         '/profile': (context) => const ProfileScreen(),
+        '/add-job': (context) => const AddJobScreen(),
       },
     );
   }

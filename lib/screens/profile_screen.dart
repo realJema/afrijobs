@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/profile_provider.dart';
 import '../services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -10,36 +12,11 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _authService = AuthService();
-  Map<String, dynamic>? _profile;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProfile();
-  }
-
-  Future<void> _loadProfile() async {
-    try {
-      final profile = await _authService.getCurrentUserProfile();
-      if (mounted) {
-        setState(() {
-          _profile = profile;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
 
   Future<void> _signOut() async {
     await _authService.signOut();
     if (!mounted) return;
+    context.read<ProfileProvider>().clear();
     Navigator.pushReplacementNamed(context, '/signin');
   }
 
@@ -81,11 +58,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+    final profile = context.watch<ProfileProvider>().profile;
 
     return Scaffold(
       appBar: AppBar(
@@ -107,10 +80,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: 50,
-                    backgroundImage: _profile?['avatar_url'] != null
-                        ? NetworkImage(_profile!['avatar_url'])
+                    backgroundImage: profile?['avatar_url'] != null
+                        ? NetworkImage(profile!['avatar_url'])
                         : null,
-                    child: _profile?['avatar_url'] == null
+                    child: profile?['avatar_url'] == null
                         ? const Icon(Icons.person, size: 50)
                         : null,
                   ),
@@ -144,33 +117,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     _buildProfileSection(
                       'Full Name',
-                      _profile?['full_name'],
-                      () {
+                      profile?['full_name'],
+                      () async {
                         // Show edit dialog
+                        final provider = context.read<ProfileProvider>();
+                        await provider.updateProfile(
+                          fullName: 'New Name', // Replace with dialog input
+                        );
                       },
                     ),
                     const Divider(),
                     _buildProfileSection(
                       'Email',
-                      _profile?['email'],
+                      profile?['email'],
                       () {
-                        // Show edit dialog
+                        // Email cannot be edited
                       },
                     ),
                     const Divider(),
                     _buildProfileSection(
                       'Phone Number',
-                      _profile?['phone_number'],
-                      () {
+                      profile?['phone_number'],
+                      () async {
                         // Show edit dialog
+                        final provider = context.read<ProfileProvider>();
+                        await provider.updateProfile(
+                          phoneNumber: 'New Phone', // Replace with dialog input
+                        );
                       },
                     ),
                     const Divider(),
                     _buildProfileSection(
                       'Location',
-                      _profile?['location'],
-                      () {
+                      profile?['location'],
+                      () async {
                         // Show edit dialog
+                        final provider = context.read<ProfileProvider>();
+                        await provider.updateProfile(
+                          location: 'New Location', // Replace with dialog input
+                        );
                       },
                     ),
                   ],
@@ -194,7 +179,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    if (_profile?['resume_url'] != null)
+                    if (profile?['resume_url'] != null)
                       Row(
                         children: [
                           const Icon(Icons.description),
@@ -215,8 +200,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       )
                     else
                       ElevatedButton.icon(
-                        onPressed: () {
+                        onPressed: () async {
                           // Handle resume upload
+                          final provider = context.read<ProfileProvider>();
+                          await provider.updateProfile(
+                            resumeUrl: 'new_resume_url', // Replace with actual upload
+                          );
                         },
                         icon: const Icon(Icons.upload_file),
                         label: const Text('Upload Resume'),

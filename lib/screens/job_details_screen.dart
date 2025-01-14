@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/job.dart';
 
 class JobDetailsScreen extends StatelessWidget {
@@ -287,19 +289,16 @@ class JobDetailsScreen extends StatelessWidget {
             const SizedBox(width: 16),
             Expanded(
               child: ElevatedButton(
-                onPressed: () {
-                  // TODO: Implement apply functionality
-                },
+                onPressed: () => _showContactOptions(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2D4A3E),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  minimumSize: const Size(double.infinity, 56),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
                 child: const Text(
-                  'Apply Job',
+                  'Apply Now',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -311,6 +310,137 @@ class JobDetailsScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _launchUrl(String urlString, BuildContext context) async {
+    try {
+      final Uri url = Uri.parse(urlString);
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not launch the app')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber, BuildContext context) async {
+    final Uri phoneUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber.replaceAll(RegExp(r'[^\d+]'), ''),
+    );
+    await _launchUrl(phoneUri.toString(), context);
+  }
+
+  Future<void> _sendEmail(String email, String subject, BuildContext context) async {
+    final message = 'Hello,\n\n'
+        'I wish to apply for the ${job.title} position at ${job.company} that I found on AfriJobs.\n\n'
+        'I am interested in this opportunity and would like to submit my application.\n\n'
+        'Best regards.';
+
+    final Uri emailUri = Uri(
+      scheme: 'mailto',
+      path: email,
+      queryParameters: {
+        'subject': Uri.encodeComponent(subject),
+        'body': Uri.encodeComponent(message),
+      },
+    );
+    await _launchUrl(emailUri.toString(), context);
+  }
+
+  Future<void> _openWhatsApp(String phoneNumber, BuildContext context) async {
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    final message = '''Hello, I wish to apply for the ${job.title} position at ${job.company} that I found on AfriJobs.''';
+    final encodedMessage = Uri.encodeComponent(message);
+    await _launchUrl('https://wa.me/$cleanPhone?text=$encodedMessage', context);
+  }
+
+  Future<void> _showContactOptions(BuildContext context) async {
+    final contactEmail = job.contactEmail;
+    final contactPhone = job.contactPhone;
+
+    if (contactEmail == null && contactPhone == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No contact information available')),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Contact Options',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 24),
+              if (contactPhone != null && contactPhone.isNotEmpty) ...[
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFF2D4A3E),
+                    child: Icon(Icons.phone, color: Colors.white),
+                  ),
+                  title: const Text('Call'),
+                  subtitle: Text(contactPhone),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _makePhoneCall(contactPhone, context);
+                  },
+                ),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFF25D366),
+                    child: FaIcon(FontAwesomeIcons.whatsapp, color: Colors.white),
+                  ),
+                  title: const Text('WhatsApp'),
+                  subtitle: Text(contactPhone),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _openWhatsApp(contactPhone, context);
+                  },
+                ),
+              ],
+              if (contactEmail != null && contactEmail.isNotEmpty)
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFF4285F4),
+                    child: Icon(Icons.email, color: Colors.white),
+                  ),
+                  title: const Text('Email'),
+                  subtitle: Text(contactEmail),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _sendEmail(
+                      contactEmail,
+                      'Job Application: ${job.title}',
+                      context,
+                    );
+                  },
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 

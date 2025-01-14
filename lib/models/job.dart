@@ -11,6 +11,8 @@ class Job {
   final int? applicants;
   final DateTime createdAt;
   final String? logo;
+  final String? contactEmail;
+  final String? contactPhone;
 
   Job({
     required this.id,
@@ -25,6 +27,8 @@ class Job {
     this.applicants,
     required this.createdAt,
     this.logo,
+    this.contactEmail,
+    this.contactPhone,
   }) : tags = tags ?? [];
 
   factory Job.fromJson(Map<String, dynamic> json) {
@@ -41,6 +45,8 @@ class Job {
       applicants: json['applicants'] as int?,
       createdAt: DateTime.parse(json['created_at'] as String? ?? DateTime.now().toIso8601String()),
       logo: json['logo'] as String?,
+      contactEmail: json['contact_email'] as String?,
+      contactPhone: json['contact_phone'] as String?,
     );
   }
 
@@ -58,6 +64,8 @@ class Job {
       'applicants': applicants,
       'created_at': createdAt.toIso8601String(),
       'logo': logo,
+      'contact_email': contactEmail,
+      'contact_phone': contactPhone,
     };
   }
 }
