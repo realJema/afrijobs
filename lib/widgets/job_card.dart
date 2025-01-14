@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/job.dart';
 import '../screens/job_details_screen.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 class JobCard extends StatelessWidget {
   final Job job;
@@ -9,6 +10,19 @@ class JobCard extends StatelessWidget {
     super.key,
     required this.job,
   });
+
+  String _getDeadlineText() {
+    if (job.deadline == null) {
+      return 'Ongoing';
+    }
+    
+    final now = DateTime.now();
+    if (job.deadline!.isBefore(now)) {
+      return 'Expired';
+    }
+    
+    return 'Closes ${timeago.format(job.deadline!, allowFromNow: true)}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,12 +95,24 @@ class JobCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        job.company ?? 'Unknown Company',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.timer_outlined,
+                            size: 16,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _getDeadlineText(),
+                            style: TextStyle(
+                              color: job.deadline?.isBefore(DateTime.now()) ?? false
+                                  ? Colors.red
+                                  : Colors.grey[600],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
                       Row(

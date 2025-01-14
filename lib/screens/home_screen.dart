@@ -25,6 +25,13 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _error;
   bool _isLoading = true;
 
+  void _showFilters() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const FilterScreen()),
+    ).then((_) => _loadJobs());
+  }
+
   @override
   void initState() {
     super.initState();
@@ -306,15 +313,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     delegate: _StickySearchBarDelegate(
                       searchController: _searchController,
                       onSearch: _onSearch,
-                      showFilters: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const FilterScreen(),
-                          ),
-                        );
-                        _loadJobs();
-                      },
+                      showFilters: _showFilters,
                     ),
                   ),
 
@@ -387,36 +386,70 @@ class _StickySearchBarDelegate extends SliverPersistentHeaderDelegate {
     return Container(
       color: Colors.grey[50],
       padding: const EdgeInsets.all(16.0),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.search, color: Colors.grey[400]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: searchController,
+                      onChanged: onSearch,
+                      decoration: InputDecoration(
+                        hintText: 'Search jobs...',
+                        hintStyle: TextStyle(color: Colors.grey[400]),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.search, color: Colors.grey[400]),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: searchController,
-                onChanged: onSearch,
-                decoration: InputDecoration(
-                  hintText: 'Search jobs...',
-                  hintStyle: TextStyle(color: Colors.grey[400]),
-                  border: InputBorder.none,
+          ),
+          const SizedBox(width: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: showFilters,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  child: const Icon(
+                    Icons.filter_list,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
