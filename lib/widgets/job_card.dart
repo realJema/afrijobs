@@ -82,7 +82,7 @@ class JobCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        job.company,
+                        job.company ?? 'Unknown Company',
                         style: TextStyle(
                           color: Colors.grey[600],
                           fontSize: 14,

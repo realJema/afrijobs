@@ -1,8 +1,11 @@
 class Job {
   final String id;
   final String title;
-  final String company;
-  final String location;
+  final String? companyId;
+  final String? company;
+  final String? logo;
+  final String? townId;  // Add townId
+  final String location; // Keep location for display purposes
   final String description;
   final String? type;
   final List<String> tags;
@@ -10,14 +13,20 @@ class Job {
   final String? maxSalary;
   final int? applicants;
   final DateTime createdAt;
-  final String? logo;
+  final DateTime updatedAt;
   final String? contactEmail;
   final String? contactPhone;
+  final String? requirements;
+  final String status;
+  final DateTime? deadline;
 
   Job({
     required this.id,
     required this.title,
-    required this.company,
+    this.companyId,
+    this.company,
+    this.logo,
+    this.townId,
     required this.location,
     required this.description,
     this.type,
@@ -26,16 +35,23 @@ class Job {
     this.maxSalary,
     this.applicants,
     required this.createdAt,
-    this.logo,
+    DateTime? updatedAt,
     this.contactEmail,
     this.contactPhone,
-  }) : tags = tags ?? [];
+    this.requirements,
+    this.status = 'active',
+    this.deadline,
+  }) : tags = tags ?? [],
+       updatedAt = updatedAt ?? createdAt;
 
   factory Job.fromJson(Map<String, dynamic> json) {
     return Job(
       id: json['id'] as String? ?? '',
       title: json['title'] as String? ?? '',
-      company: json['company'] as String? ?? '',
+      companyId: json['company_id'] as String?,
+      company: json['company_name'] as String?,
+      logo: json['logo_url'] as String?,
+      townId: json['town_id'] as String?,
       location: json['location'] as String? ?? '',
       description: json['description'] as String? ?? '',
       type: json['job_types']?['name'] as String?,
@@ -44,9 +60,12 @@ class Job {
       maxSalary: json['max_salary']?.toString(),
       applicants: json['applicants'] as int?,
       createdAt: DateTime.parse(json['created_at'] as String? ?? DateTime.now().toIso8601String()),
-      logo: json['logo'] as String?,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
       contactEmail: json['contact_email'] as String?,
       contactPhone: json['contact_phone'] as String?,
+      requirements: json['requirements'] as String?,
+      status: json['status'] as String? ?? 'active',
+      deadline: json['application_deadline'] != null ? DateTime.parse(json['application_deadline']) : null,
     );
   }
 
@@ -54,18 +73,21 @@ class Job {
     return {
       'id': id,
       'title': title,
-      'company': company,
+      'company_id': companyId,
+      'town_id': townId,
       'location': location,
       'description': description,
-      'job_type_id': null,
       'tag_names': tags,
       'min_salary': minSalary,
       'max_salary': maxSalary,
       'applicants': applicants,
       'created_at': createdAt.toIso8601String(),
-      'logo': logo,
+      'updated_at': updatedAt.toIso8601String(),
       'contact_email': contactEmail,
       'contact_phone': contactPhone,
+      'requirements': requirements,
+      'status': status,
+      'application_deadline': deadline?.toIso8601String(),
     };
   }
 }

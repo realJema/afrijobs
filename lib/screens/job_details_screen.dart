@@ -40,7 +40,7 @@ class JobDetailsScreen extends StatelessWidget {
                         onPressed: () => Navigator.pop(context),
                       ),
                       Text(
-                        job.company,
+                        job.company ?? 'Unknown Company',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -120,7 +120,7 @@ class JobDetailsScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  '${job.company} • ${job.location}',
+                                  '${job.company ?? 'Unknown Company'} • ${job.location}',
                                   style: TextStyle(
                                     fontSize: 16,
                                     color: Colors.grey[600],
@@ -341,11 +341,10 @@ class JobDetailsScreen extends StatelessWidget {
   }
 
   Future<void> _sendEmail(String email, String subject, BuildContext context) async {
-    final message = 'Hello,\n\n'
-        'I wish to apply for the ${job.title} position at ${job.company} that I found on AfriJobs.\n\n'
-        'I am interested in this opportunity and would like to submit my application.\n\n'
+    final message = 
+        'I wish to apply for the ${job.title} position at ${job.company ?? 'your company'} that I found on AfriJobs.\n\n'
+        'Please find my application attached.\n\n'
         'Best regards.';
-
     final Uri emailUri = Uri(
       scheme: 'mailto',
       path: email,
@@ -359,7 +358,7 @@ class JobDetailsScreen extends StatelessWidget {
 
   Future<void> _openWhatsApp(String phoneNumber, BuildContext context) async {
     final cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-    final message = '''Hello, I wish to apply for the ${job.title} position at ${job.company} that I found on AfriJobs.''';
+    final message = '''Hello, I wish to apply for the ${job.title} position at ${job.company ?? 'your company'} that I found on AfriJobs.''';
     final encodedMessage = Uri.encodeComponent(message);
     await _launchUrl('https://wa.me/$cleanPhone?text=$encodedMessage', context);
   }
