@@ -362,4 +362,23 @@ class JobService {
       return [];
     }
   }
+
+  Future<Map<String, dynamic>> applyForJob(String jobId, String applicationType) async {
+    try {
+      final response = await supabase
+          .rpc('apply_for_job', params: {
+            'p_job_id': jobId,
+            'p_user_id': supabase.auth.currentUser!.id,
+            'p_application_type': applicationType,
+          });
+
+      return response as Map<String, dynamic>;
+    } catch (e) {
+      print('Error applying for job: $e');
+      return {
+        'success': false,
+        'message': 'Failed to apply for job. Please try again later.',
+      };
+    }
+  }
 }

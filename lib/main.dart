@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'providers/filter_provider.dart';
 import 'providers/profile_provider.dart';
+import 'providers/job_provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/signin_screen.dart';
 import 'screens/signup_screen.dart';
@@ -35,6 +36,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => JobProvider()),
         ChangeNotifierProvider<FilterProvider>.value(value: filterProvider),
         ChangeNotifierProvider<ProfileProvider>.value(value: profileProvider),
       ],
